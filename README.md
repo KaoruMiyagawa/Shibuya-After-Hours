@@ -6,7 +6,7 @@
 
 ![SHIBUYA / AFTER HOURS 场景截图：雨夜路口、商业大楼、霓虹广告和行人](previews/shibuya-after-hours.png)
 
-**在线体验：** [kaorumiyagawa.github.io/Shibuya-After-Hours](https://kaorumiyagawa.github.io/Shibuya-After-Hours/)（首次部署完成后开放）
+**在线体验：** [kaorumiyagawa.github.io/Shibuya-After-Hours](https://kaorumiyagawa.github.io/Shibuya-After-Hours/)
 
 ## 场景亮点
 
