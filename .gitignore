@@ -26,6 +26,10 @@ coverage/
 playwright-report/
 test-results/
 
+# Three.js core is intentionally vendored for offline static hosting
+!vendor/three/build/
+!vendor/three/build/three.module.js
+
 # Generated camera checks: retain the curated README hero only
 previews/*
 !previews/shibuya-after-hours.png
