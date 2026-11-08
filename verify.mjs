@@ -1,0 +1,29 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import { chromium } from 'playwright';
+const browser=await chromium.launch({headless:true,channel:'chrome',args:['--enable-webgl','--ignore-gpu-blocklist']});
+const errors=[],failedResources=[],results=[];
+try {
+  const page=await browser.newPage({viewport:{width:1920,height:1080},deviceScaleFactor:1,acceptDownloads:true});
+  page.on('pageerror',e=>errors.push(e.message));page.on('response',r=>{if(r.status()>=400)failedResources.push(`${r.status()} ${r.url()}`);});
+  await page.goto('http://localhost:4173',{waitUntil:'networkidle'});
+  await page.waitForFunction(()=>!!window.sceneAPI,{timeout:90000});await page.waitForSelector('#loading',{state:'detached'});
+  await page.waitForTimeout(1200);
+  assert.equal(await page.locator('canvas').count(),1);results.push('WebGL scene initialized and all assets loaded');
+  await page.click('#pause');const t=await page.evaluate(()=>sceneAPI.time);await page.waitForTimeout(300);assert.equal(await page.evaluate(()=>sceneAPI.time),t);results.push('Pause freezes simulation time');
+  await page.waitForTimeout(2500);await page.screenshot({path:'previews/final-interface.png'});
+  await page.click('#rain');assert.equal(await page.evaluate(()=>sceneAPI.raining),false);await page.keyboard.press('r');assert.equal(await page.evaluate(()=>sceneAPI.raining),true);results.push('Rain control and keyboard shortcut agree');
+  await page.click('[data-view="street"]');await page.waitForTimeout(2700);const street=await page.evaluate(()=>sceneAPI.camera.position.toArray());assert.ok(street[1]<4,`Street camera should be at eye level: ${street}`);assert.equal(await page.locator('.view.active').getAttribute('data-view'),'street');await page.screenshot({path:'previews/final-street.png'});results.push('Street preset reaches the intended low camera height');
+  await page.click('[data-view="aerial"]');await page.waitForTimeout(2700);assert.ok(await page.evaluate(()=>sceneAPI.camera.position.y>100));await page.screenshot({path:'previews/final-aerial.png'});results.push('Aerial preset and active control are synchronized');
+  await page.click('#quality');assert.equal(await page.evaluate(()=>sceneAPI.highQuality),false);await page.click('#quality');assert.equal(await page.evaluate(()=>sceneAPI.highQuality),true);results.push('Both rendering quality modes work');
+  await page.click('#tour');assert.equal(await page.evaluate(()=>sceneAPI.touring),true);await page.mouse.move(900,500);await page.mouse.down();await page.mouse.move(1000,530,{steps:10});await page.mouse.up();assert.equal(await page.evaluate(()=>sceneAPI.touring),false);results.push('Dragging exits the automatic tour');
+  await page.click('[data-view="crossing"]');await page.waitForTimeout(2700);
+  const before=await page.evaluate(()=>sceneAPI.camera.position.toArray());await page.mouse.move(960,500);await page.mouse.wheel(0,-120);await page.waitForTimeout(350);const after=await page.evaluate(()=>sceneAPI.camera.position.toArray());assert.notDeepEqual(before,after);results.push('Orbit zoom changes the viewpoint');
+  await page.click('[data-view="crossing"]');await page.waitForTimeout(2700);
+  await page.keyboard.press('h');assert.equal(await page.locator('#interface').getAttribute('class'),'hidden');await page.setViewportSize({width:2560,height:1440});await page.waitForTimeout(400);await page.screenshot({path:'previews/shibuya-after-hours-2560.png'});
+  const downloadEvent=page.waitForEvent('download');await page.keyboard.press('p');const download=await downloadEvent;await download.saveAs('previews/shibuya-after-hours.png');const png=await fs.readFile('previews/shibuya-after-hours.png');assert.equal(png.readUInt32BE(16),2560);assert.equal(png.readUInt32BE(20),1440);assert.ok(png.length>100000);results.push('Screenshot export produces a full-resolution PNG without UI');
+  await page.keyboard.press('h');await page.setViewportSize({width:390,height:844});await page.waitForTimeout(400);await page.screenshot({path:'previews/mobile.png'});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth),390);for(const selector of ['#tour','#pause','#rain','#quality','#capture','#fullscreen']){const box=await page.locator(selector).boundingBox();assert.ok(box.x>=0&&box.x+box.width<=390,`${selector} must fit mobile viewport`);}results.push('Mobile controls fit without horizontal overflow');
+  await page.click('#pause');assert.equal(await page.evaluate(()=>sceneAPI.paused),false);results.push('Simulation resumes after checks');
+  assert.deepEqual(errors,[]);assert.deepEqual(failedResources,[]);results.push('No uncaught JavaScript errors or failed HTTP resources');
+  await fs.writeFile('previews/verification.json',JSON.stringify({passed:true,results,errors,failedResources},null,2));console.log(JSON.stringify({passed:true,results},null,2));
+} finally {await browser.close();}

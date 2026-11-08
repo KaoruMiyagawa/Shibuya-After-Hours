@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#101827" />
+  <title>雨夜街角 · 微缩模型</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { width:100%; height:100%; margin:0; overflow:hidden; background:#101827; }
+    body { touch-action:none; }
+    canvas { display:block; width:100%; height:100%; }
+  </style>
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/" } }
+  </script>
+</head>
+<body>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#101827');
+scene.fog = new THREE.Fog('#101827', 22, 46);
+const camera = new THREE.PerspectiveCamera(34, innerWidth / innerHeight, .1, 100);
+camera.position.set(17, 15, 19);
+const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:false });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.25;
+document.body.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 1.3, 0);
+controls.enableDamping = true;
+controls.dampingFactor = .055;
+controls.minDistance = 13;
+controls.maxDistance = 32;
+controls.maxPolarAngle = Math.PI * .48;
+
+scene.add(new THREE.HemisphereLight('#c9e4ff', '#253047', 2.0));
+const moon = new THREE.DirectionalLight('#b6d6ff', 2.2);
+moon.position.set(-8, 15, -6); moon.castShadow = true;
+moon.shadow.mapSize.set(2048,2048); moon.shadow.camera.left=-14; moon.shadow.camera.right=14; moon.shadow.camera.top=14; moon.shadow.camera.bottom=-14;
+scene.add(moon);
+
+const mat = (color, roughness=.75, extra={}) => new THREE.MeshStandardMaterial({color, roughness, ...extra});
+const mats = {
+  ink: mat('#182330'), concrete:mat('#343f4b'), curb:mat('#78838c'), wall:mat('#d6d1c6'), wallSide:mat('#a5a5a2'), roof:mat('#323e50'),
+  asphalt:mat('#202c3a',.22,{metalness:.18}), glass:mat('#172e45',.19,{metalness:.32,transparent:true,opacity:.75}), cream:mat('#f4d8a0'), red:mat('#e65c67'), teal:mat('#51c7c1'),
+  yellow:mat('#ffdc7c'), white:mat('#eff2de'), metal:mat('#718492',.35,{metalness:.75}), black:mat('#18232e',.43,{metalness:.3}), foliage:mat('#397d70'), foliage2:mat('#588e73'),
+  wood:mat('#785c53'), vending:mat('#405c86',.38,{metalness:.38}), puddle:mat('#4a8296',.12,{metalness:.5,transparent:true,opacity:.75})
+};
+const boxGeo = new THREE.BoxGeometry(1,1,1);
+function box(name, x,y,z, sx,sy,sz, material, parent=scene, outline=false) {
+  const mesh = new THREE.Mesh(boxGeo, material); mesh.name=name; mesh.position.set(x,y,z); mesh.scale.set(sx,sy,sz); mesh.castShadow=true; mesh.receiveShadow=true; parent.add(mesh);
+  if(outline){ const edges=new THREE.LineSegments(new THREE.EdgesGeometry(boxGeo),new THREE.LineBasicMaterial({color:'#17212a',transparent:true,opacity:.72})); edges.scale.set(sx,sy,sz); edges.position.set(x,y,z); parent.add(edges); }
+  return mesh;
+}
+function cyl(name,x,y,z,r1,r2,h,material,segments=12){const m=new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,segments),material);m.name=name;m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;scene.add(m);return m;}
+function line(points, color='#283641', width=1){const g=new THREE.BufferGeometry().setFromPoints(points.map(p=>new THREE.Vector3(...p)));const l=new THREE.Line(g,new THREE.LineBasicMaterial({color,linewidth:width}));scene.add(l);return l;}
+function glow(color,intensity=2){return new THREE.MeshBasicMaterial({color, toneMapped:false});}
+function labelTexture(text, bg, fg='#fff8d8', sub='24H OPEN'){
+ const c=document.createElement('canvas');c.width=512;c.height=160;const x=c.getContext('2d');
+ x.fillStyle=bg;x.fillRect(0,0,512,160);x.fillStyle=fg;x.font='bold 68px sans-serif';x.textAlign='center';x.fillText(text,256,88);x.font='bold 22px sans-serif';x.fillText(sub,256,133);
+ const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return t;
+}
+
+// A single beveled square plinth carries the entire miniature.
+box('square plinth',0,-.34,0,12,.68,12,mat('#253848'),scene,true);
+box('wet street surface',0,.015,0,11.82,.08,11.82,mats.asphalt);
+// L-shaped sidewalk: the road visibly turns around the shop corner.
+box('raised sidewalk',-2.72,.16,-1.65,6.25,.28,7.95,mats.concrete);
+box('shop forecourt',-2.72,.31,-1.65,6.05,.08,7.75,mat('#59636a'));
+box('sidewalk curb north',-2.72,.28,2.42,6.18,.24,.17,mats.curb);
+box('sidewalk curb east',.39,.28,-1.65,.17,.24,7.9,mats.curb);
+// curb highlight dashes
+for(let i=0;i<10;i++) box('curb marker',-5.45+i*.61,.414,2.42,.28,.035,.035,mat(i%2?'#d7c9ae':'#34414a'));
+
+// Convenience store building, on the back-left corner of the diorama.
+box('shop body',-2.7,1.72,-2.45,5.45,2.9,3.45,mats.wall,scene,true);
+box('side wall',-.01,1.73,-2.45,.04,2.82,3.35,mats.wallSide);
+box('fascia shadow',-2.7,3.18,-.68,5.52,.2,.18,mats.ink);
+box('sign fascia',-2.7,3.5,-.68,5.56,.48,.22,mats.red,scene,true);
+const sign=new THREE.Mesh(new THREE.PlaneGeometry(5.2,.42),new THREE.MeshBasicMaterial({map:labelTexture('KONBINI','#e65c67','#fff4cd','DAILY • OPEN 24H'),toneMapped:false}));sign.position.set(-2.7,3.5,-.555);scene.add(sign);
+// luminous canopy and striped underside
+box('rain canopy',-2.7,2.94,-.08,5.7,.16,1.28,mat('#e9d8ba'),scene,true);
+box('canopy front red trim',-2.7,2.91,.57,5.72,.11,.16,mats.red);
+for(let i=0;i<9;i++) box('canopy stripe',-5.35+i*.66,2.842,.51,.32,.025,.07,mat(i%2?'#e7ddd0':'#de7980'));
+// Warm shop interior behind broad storefront glazing.
+box('warm interior',-2.7,1.73,-.72,5.15,2.35,.045,glow('#f4bd68'));
+for(let i=0;i<4;i++){
+ box('window mullion',-5.13+i*1.17,1.8,-.61,.055,2.2,.1,mats.ink);
+}
+box('window sill',-2.7,.62,-.59,5.2,.12,.13,mats.ink);
+box('window header',-2.7,2.91,-.6,5.25,.09,.12,mats.ink);
+// Shelves, tiny product blocks and a counter seen through the glass.
+for(let row=0;row<3;row++){
+ box('interior shelf',-3.8,1.02+row*.53,-1.06,2.1,.09,.55,mat('#a87655'));
+ for(let j=0;j<9;j++) box('shelf goods',-4.72+j*.23,1.19+row*.53,-.98,.14,.28,.27,mat(['#e97367','#78b5b3','#efcf73','#ecede2'][((j+row)%4)]));
+}
+// Automatic sliding door, teal jamb and illuminated threshold.
+box('door frame',-.31,1.76,-.58,1.0,2.36,.16,mats.teal,scene,true);
+box('door glass left',-.55,1.76,-.48,.43,2.16,.045,mats.glass);
+box('door glass right',-.08,1.76,-.48,.43,2.16,.045,mats.glass);
+box('door threshold',-.31,.57,-.34,1.0,.07,.55,glow('#8ce8dd'));
+box('doormat',-.31,.39,.25,1.12,.045,.8,mat('#333b42'));
+for(let i=0;i<4;i++) box('mat groove',-.72+i*.27,.417,.25,.025,.009,.67,mat('#738080'));
+// tiny poster and operating-hours panel
+box('poster frame',-5.08,1.07,-.53,.42,.68,.07,mats.wood);
+box('poster art',-5.08,1.07,-.487,.33,.55,.02,mat('#f3c979'));
+box('poster stripe',-5.08,1.12,-.47,.25,.12,.014,mats.red);
+
+// Side alley turning away along the right side of the building.
+box('alley paving',2.9,.075,-2.08,5.85,.12,4.0,mat('#283845'));
+for(let i=0;i<5;i++) box('alley paving seam',.45+i*1.18,.143,-2.08,.025,.01,3.9,mat('#52616a'));
+// back wall and small air conditioning condenser
+box('alley wall',1.2,1.25,-4.0,8.0,2.45,.2,mat('#69737b'));
+box('aircon shell',.38,1.75,-3.77,1.0,.72,.34,mats.metal,scene,true);
+cyl('aircon fan',.38,1.75,-3.57,.25,.25,.06,mats.black,16).rotation.x=Math.PI/2;
+for(let i=0;i<5;i++) box('condenser vents',.08+i*.14,1.3,-3.57,.045,.12,.03,mats.ink);
+// drainpipe along corner
+cyl('rain downpipe',.12,1.6,-.5,.065,.065,2.6,mats.metal,8);
+
+// Vending machine with luminous product window, coin slot and bottom grille.
+box('vending machine',.95,1.18,.05,.9,2.2,.62,mats.vending,scene,true);
+box('vending lightbox',.95,2.05,.373,.68,.28,.035,glow('#9ed9e7'));
+box('vending glass',.89,1.35,.379,.61,1.0,.025,mat('#92d9e5',.2,{emissive:'#327f97',emissiveIntensity:.7,metalness:.2}));
+for(let r=0;r<3;r++) for(let c=0;c<3;c++) box('drink can',.68+c*.2,1.12+r*.29,.418,.12,.19,.09,mat(['#e76f74','#eccb75','#6fc2bc'][(r+c)%3],.35,{emissive:'#26323d',emissiveIntensity:.3}));
+box('vend buttons',1.31,1.35,.413,.1,.38,.03,mats.cream);
+box('vend coin slot',1.24,.77,.415,.16,.045,.025,mats.ink);
+for(let i=0;i<4;i++) box('vend lower vent',.73+i*.14,.48,.414,.035,.06,.025,mats.ink);
+// glowing vending side spill
+const vendLight=new THREE.PointLight('#68d9e6',13,4);vendLight.position.set(1.05,1.6,.8);scene.add(vendLight);
+
+// Bike: detailed frame with two dark outlined wheels, spokes and handlebars.
+function wheel(x,z){const g=new THREE.Group();g.position.set(x,.53,z);scene.add(g);const tor=new THREE.Mesh(new THREE.TorusGeometry(.38,.045,8,20),mats.ink);tor.rotation.y=Math.PI/2;tor.castShadow=true;g.add(tor);for(let i=0;i<8;i++){const a=i*Math.PI/4;line([[x,.53,z],[x,.53+Math.sin(a)*.34,z+Math.cos(a)*.34]],'#71818a');}return g;}
+wheel(-1.05,1.15);wheel(.18,1.15);
+line([[-1.05,.53,1.15],[-.7,1.03,1.15],[.18,.53,1.15],[-1.05,.53,1.15],[-.7,1.03,1.15],[ -.38,.53,1.15],[.18,.53,1.15]],'#60bec0',3);
+line([[-.7,1.03,1.15],[-.77,1.17,1.15],[-.49,1.17,1.15]],'#28313a',3);
+line([[.18,.53,1.15],[.28,1.1,1.15],[.45,1.16,1.15],[.53,1.13,1.15]],'#303b45',3);
+line([[-.84,.95,1.15],[-.55,.95,1.15]],'#d8b481',3);
+// umbrella stand and a pair of leaning umbrellas
+box('umbrella stand',-1.7,.53,.3,.68,.38,.48,mats.metal,scene,true);
+for(let i=0;i<3;i++){cyl('umbrella',-1.92+i*.21,1.08,.3,.09,.09,1.15,mat(i===1?'#e77978':'#6daeb6'),10);const tip=new THREE.Mesh(new THREE.ConeGeometry(.16,.28,10),mat(i===1?'#e77978':'#6daeb6'));tip.position.set(-1.92+i*.21,1.78,.3);scene.add(tip);}
+// bin, small notice board and bollards
+box('street bin',-4.72,.62,.65,.54,.92,.53,mat('#526a72'),scene,true);
+box('bin lid',-4.72,1.1,.65,.62,.12,.6,mats.metal);
+box('bin slot',-4.72,.86,.38,.31,.1,.025,mats.ink);
+box('notice board post',-5.27,1.28,-1.0,.1,1.9,.1,mats.wood);
+box('notice board',-5.0,1.82,-1.0,.84,.77,.13,mat('#d6c8a5'),scene,true);
+box('notice flyer',-5.0,1.84,-.92,.61,.53,.025,mat('#e99373'));
+for(let i=0;i<3;i++)box('flyer line',-5.0,1.98-i*.13,-.9,.39,.025,.014,mat('#f5e5bc'));
+for(let i=0;i<3;i++)cyl('corner bollard',.58+i*.42,.48,1.12,.09,.09,.75,mat('#e6bf72'),10);
+
+// Japanese-style streetlamp with warm pool of light.
+cyl('streetlamp pole',4.55,2.0,3.4,.065,.08,4.0,mats.ink,10);
+line([[4.55,3.65,3.4],[4.55,3.92,3.4],[4.1,3.92,3.4]],'#263440',3);
+box('streetlamp lantern',4.04,3.78,3.4,.42,.28,.38,glow('#ffe09a'));
+const lampLight=new THREE.PointLight('#ffcf83',20,7);lampLight.position.set(4.0,3.55,3.4);scene.add(lampLight);
+// Utility pole, insulators and overhead crossing wires
+cyl('utility pole',4.88,2.2,-3.4,.14,.19,4.5,mat('#705e52'),10);
+box('crossbar',4.88,4.0,-3.4,.24,.12,1.25,mats.wood);
+for(let i=0;i<3;i++)cyl('insulator',4.88,4.14,-3.82+i*.4,.08,.08,.16,mat('#8eb3ba'),8);
+line([[-4.8,5.4,-3.1],[.1,5.0,-2.9],[4.88,5.4,-3.4]],'#46515a');
+line([[-4.6,5.65,-2.9],[.8,5.35,-3.0],[4.88,5.65,-3.4]],'#46515a');
+// Street signs mounted at the alley corner
+box('sign post',2.0,1.9,1.72,.09,3.5,.09,mats.metal);
+box('alley sign',2.0,3.06,1.72,1.22,.36,.1,mat('#517e82'),scene,true);
+const alleyTxt=new THREE.Mesh(new THREE.PlaneGeometry(1.05,.24),new THREE.MeshBasicMaterial({map:labelTexture('路地','#517e82','#fff2c9','ROJI'),transparent:true}));alleyTxt.position.set(2,3.06,1.78);scene.add(alleyTxt);
+box('parking sign',3.0,2.32,1.72,.48,.48,.1,mat('#edf0e7'),scene,true);
+box('parking P',3.0,2.32,1.78,.3,.3,.025,mat('#537aa1'));
+// low corner guard rail
+for(let i=0;i<5;i++)cyl('rail post',3.65+i*.46,.43,2.58,.045,.045,.65,mats.metal,8);
+box('guard rail',4.57,.69,2.58,2.05,.07,.07,mats.metal);
+// parking bay marks and zebra crossing reflect on wet road
+for(let i=0;i<3;i++)box('parking bay line',2.25+i*.92,.071,4.42,.055,.018,2.05,mat('#d6d8c9'));
+for(let i=0;i<6;i++)box('zebra crossing',-1.0+i*.58,.083,4.62,.31,.025,.9,mat('#d2d9d5'));
+// narrow drainage channel with little grates
+box('drain channel',-2.1,.076,3.02,5.6,.025,.16,mat('#111f29'));
+for(let i=0;i<18;i++)box('drain grate',-4.8+i*.32,.095,3.02,.045,.015,.13,mat('#829098'));
+// Irregular shallow puddles pick up cool and warm highlights.
+function puddle(x,z,sx,sz,color){const o=new THREE.Mesh(new THREE.CircleGeometry(1,16),new THREE.MeshStandardMaterial({color,roughness:.12,metalness:.55,transparent:true,opacity:.58,side:THREE.DoubleSide}));o.rotation.x=-Math.PI/2;o.position.set(x,.079,z);o.scale.set(sx,sz,1);scene.add(o);}
+puddle(-1.0,3.5,1.2,.28,'#75aeb7');puddle(1.7,3.45,.75,.22,'#e2b16e');puddle(4.6,1.6,.92,.32,'#577e9d');puddle(-4.4,4.0,.4,.72,'#59818c');puddle(.3,4.8,.45,.24,'#d4a675');
+
+// Small planters and clipped shrubs soften the model edges.
+function shrub(x,z){box('planter',x,.38,z,.95,.52,.82,mat('#8e7362'),scene,true);for(let i=0;i<7;i++){const s=new THREE.Mesh(new THREE.IcosahedronGeometry(.27,1),mat(i%2?'#3b806d':'#559274'));s.position.set(x-.38+(i%4)*.25,.78+(i%3)*.11,z-.22+Math.floor(i/4)*.37);s.scale.set(1,.78,1);s.castShadow=true;scene.add(s);}}
+shrub(-5.15,1.65);shrub(5.0,-.55);
+
+// Rain streaks move through the scene; subdued so the miniature stays readable.
+const rainCount=850, rainPos=new Float32Array(rainCount*3), rainSpeed=new Float32Array(rainCount);
+for(let i=0;i<rainCount;i++){rainPos[i*3]=(Math.random()-.5)*15;rainPos[i*3+1]=Math.random()*9;rainPos[i*3+2]=(Math.random()-.5)*15;rainSpeed[i]=.08+Math.random()*.12;}
+const rainGeo=new THREE.BufferGeometry();rainGeo.setAttribute('position',new THREE.BufferAttribute(rainPos,3));
+const rain=new THREE.Points(rainGeo,new THREE.PointsMaterial({color:'#a9d3e5',size:.025,transparent:true,opacity:.48,depthWrite:false}));scene.add(rain);
+
+// Atmospheric neon reflections near the glowing storefront and vending machine.
+const storeLight=new THREE.PointLight('#ffb765',26,7);storeLight.position.set(-2.5,2.25,.6);scene.add(storeLight);
+const signLight=new THREE.PointLight('#e76874',12,5);signLight.position.set(-2.8,3.1,.25);scene.add(signLight);
+const blueFill=new THREE.PointLight('#5c90d2',16,8);blueFill.position.set(1,1.7,3.2);scene.add(blueFill);
+// Background stage catches soft studio shadow without adding any interface.
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(200,200),mat('#101827',.95));ground.rotation.x=-Math.PI/2;ground.position.y=-.72;ground.receiveShadow=true;scene.add(ground);
+
+function animate(){requestAnimationFrame(animate);const p=rainGeo.attributes.position.array;for(let i=0;i<rainCount;i++){p[i*3+1]-=rainSpeed[i];p[i*3]-=.008;if(p[i*3+1]<.1){p[i*3+1]=8+Math.random()*2;p[i*3]=(Math.random()-.5)*15;p[i*3+2]=(Math.random()-.5)*15;}}rainGeo.attributes.position.needsUpdate=true;controls.update();renderer.render(scene,camera);}
+animate();
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+</script>
+</body>
+</html>

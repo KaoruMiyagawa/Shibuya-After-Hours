@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#071015">
+  <title>SHIBUYA / AFTER HOURS — 涩谷雨夜</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script>
+</head>
+<body>
+  <main id="world" aria-label="可交互的涩谷雨夜三维场景"></main>
+  <div id="loading"><span class="loader-mark">渋</span><p>ASSEMBLING THE NIGHT</p><small>正在点亮涩谷的街道</small><div class="loading-track"><i></i></div></div>
+  <div id="interface">
+    <header><a class="brand" href="./" aria-label="涩谷雨夜首页"><span class="brand-symbol">渋</span><span>AFTER HOURS<small>AN URBAN EXPLORATION</small></span></a><div class="location"><span class="live-dot"></span>TOKYO, JP <span class="divider">/</span> 35°39′ N 139°42′ E</div><button class="icon-button" id="hide-ui" title="隐藏界面 · H" aria-label="隐藏界面">↗</button></header>
+    <section class="title-block"><p class="eyebrow"><span>01</span> 夜の交差点 · THE SCRAMBLE</p><h1>SHIBUYA<span>AFTER HOURS.</span></h1><p class="description">雨落下，城市还未入眠。</p></section>
+    <aside class="scene-info"><span class="live-dot"></span><span>LIVE CITY<small id="city-status">23:48 · 小雨 · 17°C</small></span><span class="info-line"></span><span class="scene-number">東京<small>眠らない街</small></span></aside>
+    <footer><div class="views" aria-label="镜头选择"><button class="view active" data-view="crossing"><span>01</span> 交叉路口</button><button class="view" data-view="street"><span>02</span> 街头漫游</button><button class="view" data-view="aerial"><span>03</span> 城市鸟瞰</button></div><div class="tools"><button id="tour" title="自动巡游 · T" aria-pressed="false"><span>◉</span> 巡游</button><button id="pause" title="暂停场景 · 空格" aria-pressed="false">Ⅱ</button><button id="rain" title="切换雨幕 · R" aria-pressed="true">雨</button><button id="quality" title="切换渲染质量">高画质</button><button id="capture" title="保存场景截图 · P" aria-label="保存场景截图">⤓</button><button id="fullscreen" title="全屏" aria-label="全屏">⛶</button></div></footer>
+    <div class="instructions"><span>拖动旋转</span><i>·</i><span>滚轮缩放</span><i>·</i><span>右键平移</span><i>·</i><span>H 隐藏界面</span><span class="sound-note">REALTIME 3D EXPERIENCE</span></div>
+  </div>
+  <button id="show-ui" title="显示界面 · H" aria-label="显示界面">＋</button><div id="toast" role="status"></div>
+  <script type="module" src="boot.js"></script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+import { chromium } from 'playwright';
+const browser=await chromium.launch({headless:true,channel:'chrome',args:['--enable-webgl','--ignore-gpu-blocklist']});
+const page=await browser.newPage({viewport:{width:1600,height:1000},deviceScaleFactor:1});
+const errors=[];page.on('pageerror',e=>{errors.push(e.message);console.log('PAGEERROR',e.message)});page.on('console',m=>{if(m.type()==='error'||m.type()==='warning')console.log(m.type(),m.text().slice(0,1800))});
+await page.goto('http://localhost:4173',{waitUntil:'networkidle'});
+await page.waitForFunction(()=>!!window.sceneAPI,{timeout:120000});
+await page.waitForTimeout(5000);
+console.log(JSON.stringify(await page.evaluate(()=>({stats:window.cityStats,canvas:{w:sceneAPI.renderer.domElement.width,h:sceneAPI.renderer.domElement.height},webgl:sceneAPI.renderer.getContext().getParameter(sceneAPI.renderer.getContext().VERSION)}))));
+await page.screenshot({path:'previews/crossing.png'});
+await page.keyboard.press('h');await page.screenshot({path:'previews/crossing-clean.png'});
+await page.keyboard.press('h');await page.click('[data-view="street"]');await page.waitForTimeout(4000);await page.screenshot({path:'previews/street.png'});
+await page.click('[data-view="aerial"]');await page.waitForTimeout(4000);await page.screenshot({path:'previews/aerial.png'});
+console.log('ERRORS',JSON.stringify(errors));await browser.close();
