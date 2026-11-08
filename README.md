@@ -6,6 +6,8 @@
 
 ![SHIBUYA / AFTER HOURS 场景截图：雨夜路口、商业大楼、霓虹广告和行人](previews/shibuya-after-hours.png)
 
+**在线体验：** [kaorumiyagawa.github.io/Shibuya-After-Hours](https://kaorumiyagawa.github.io/Shibuya-After-Hours/)（首次部署完成后开放）
+
 ## 场景亮点
 
 - **高密度商业街区：** 69 栋高低错落的建筑、密集的楼层店招、暖色橱窗与可见的店内货架。
@@ -16,7 +18,7 @@
 
 ## 技术栈
 
-- [Three.js](https://threejs.org/) 0.170.0 与 WebGL 2，生成并实时渲染 3D 场景。
+- [Three.js](https://threejs.org/) 0.170.0 与 WebGL 2，生成并实时渲染 3D 场景；运行所需的官方 ES modules 随项目一同发布。
 - ES modules，采用实例化渲染处理密集人群、灯牌和城市细节。
 - Three.js 后期处理：Bloom 光晕、电影色调映射，以及自定义着色器实现的雨水扰动反射。
 - Node.js 本地静态服务。项目没有构建打包步骤，运行时资源全部存放于仓库。
@@ -30,7 +32,7 @@ npm ci
 npm start
 ```
 
-在浏览器打开 <http://localhost:4173>。也可以在 Windows 上双击 [启动场景.cmd](启动场景.cmd)。服务只监听本机地址 `127.0.0.1`。首次安装 npm 依赖时需要联网，安装完成后场景使用本地资源，不依赖 CDN。
+在浏览器打开 <http://localhost:4173>。也可以在 Windows 上双击 [启动场景.cmd](启动场景.cmd)。服务只监听本机地址 `127.0.0.1`。场景、Three.js 模块、广告纹理和样式均由本地服务提供；页面运行时不需要访问 CDN。
 
 `npm run check` 会检查场景 JavaScript 语法。
 
@@ -59,10 +61,11 @@ npm start
 - `scene.js`：城市模型、广告、灯光、雨水、人车动画与镜头控制。
 - `index.html`、`style.css`、`boot.js`：页面、响应式界面及启动失败提示。
 - `server.mjs`：仅监听本机的静态文件服务器。
+- `vendor/three/`：Three.js 0.170.0 核心与场景使用的官方模块；包含 Three.js 原始 MIT 许可声明。
 - `assets/after-hours.png`：原创巨型广告屏纹理。
 - `assets/ART_DIRECTION.md`：广告画面的生成方式与完整提示词。
 - `previews/shibuya-after-hours.png`：从场景直接导出的无界面高清截图。
 - `verify.mjs`、`inspect.mjs`：本地浏览器交互验证和视角预览脚本。
 - `index.original.html`：原始街角场景备份。
 
-依赖版本记录在 `package-lock.json`。`node_modules` 与本地检查生成的中间截图不会提交。项目未附加开源许可证。
+依赖版本记录在 `package-lock.json`。运行 `npm run vendor:three` 可从安装的 Three.js 0.170.0 包重新复制所需模块。`node_modules` 与本地检查生成的中间截图不会提交。项目未附加开源许可证。
